@@ -9,7 +9,7 @@ services:
       - ./mock_k8s.py:/app/mock_k8s.py:ro
       - ./certs:/certs:ro
   exporter:
-    # Stand-in for base-images-docker/python-ubi-min; same hardening as deploy/app.yaml.
+    # Stand-in for base-images-docker/python-ubi-min.
     image: registry.access.redhat.com/ubi9/python-312:latest
     command: ["python3", "-I", "/app/cert_inventory.py"]
     user: "65532:65532"

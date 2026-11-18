@@ -1,0 +1,40 @@
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: base-images-docker/python-ubi-min
+  tag: 3.2.0-p3.14-ubi9-build.69
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+serviceAccount:
+  create: true
+  name: ""
+
+targets:
+  - namespace: kube-system
+    kind: configmap
+    name: kube-root-ca.crt
+    key: ca.crt
+
+scanIntervalSeconds: 300
+
+service:
+  type: ClusterIP
+  port: 9793
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+monitoring:
+  enabled: false
+  labels: {}
+  interval: 60s
+  scrapeTimeout: 30s

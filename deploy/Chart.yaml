@@ -1,0 +1,6 @@
+apiVersion: v2
+name: cert-inventory
+description: Prometheus exporter for certificates in Kubernetes Secrets and ConfigMaps
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

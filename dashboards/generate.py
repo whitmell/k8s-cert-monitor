@@ -171,7 +171,7 @@ def inventory():
     panels.append({
         "id": 8, "type": "table", "title": "Monitored targets",
         "description": "Each line of targets.txt and whether cert-inventory could read it. "
-                       "'forbidden' means rbac-targets.yaml needs regenerating; 'not_found' means "
+                       "'forbidden' means the Helm-generated RBAC is missing or outdated; 'not_found' means "
                        "the Secret/ConfigMap does not exist; 'key_not_found' means the key name is wrong.",
         "datasource": DS, "gridPos": {"h": 12, "w": 24, "x": 0, "y": 24},
         "targets": [target("certinv_target_up" + sel)],

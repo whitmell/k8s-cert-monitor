@@ -1,38 +1,29 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: cert-inventory
-  labels:
-    app.kubernetes.io/name: cert-inventory
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: cert-inventory
-  namespace: cert-inventory
-  labels:
-    app.kubernetes.io/name: cert-inventory
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cert-inventory
-  namespace: cert-inventory
+  name: {{ include "cert-inventory.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
-    app.kubernetes.io/name: cert-inventory
+    {{- include "cert-inventory.labels" . | nindent 4 }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app.kubernetes.io/name: cert-inventory
+      {{- include "cert-inventory.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: cert-inventory
+        {{- include "cert-inventory.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
-      serviceAccountName: cert-inventory
+      serviceAccountName: {{ include "cert-inventory.serviceAccountName" . }}
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
@@ -41,15 +32,14 @@ spec:
           type: RuntimeDefault
       containers:
         - name: cert-inventory
-          # Replaced by the `images:` entry in kustomization.yaml.
-          image: python-ubi-min
-          # -I: isolated mode (ignore PYTHON* env vars and user site-packages).
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["python3", "-I", "/app/cert_inventory.py"]
           env:
             - name: CERTINV_TARGETS
               value: /config/targets.txt
             - name: CERTINV_SCAN_INTERVAL_SECONDS
-              value: "300"
+              value: {{ .Values.scanIntervalSeconds | quote }}
             - name: TMPDIR
               value: /tmp
           ports:
@@ -61,7 +51,6 @@ spec:
               port: metrics
             periodSeconds: 10
           livenessProbe:
-            # Fails only if scans stop completing (3 intervals + 60s).
             httpGet:
               path: /healthz
               port: metrics
@@ -69,12 +58,7 @@ spec:
             periodSeconds: 60
             failureThreshold: 3
           resources:
-            requests:
-              cpu: 10m
-              memory: 32Mi
-            limits:
-              cpu: 200m
-              memory: 128Mi
+            {{- toYaml .Values.resources | nindent 12 }}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -92,26 +76,11 @@ spec:
       volumes:
         - name: app
           configMap:
-            name: cert-inventory-app
+            name: {{ include "cert-inventory.fullname" . }}-app
         - name: targets
           configMap:
-            name: cert-inventory-targets
+            name: {{ include "cert-inventory.fullname" . }}-targets
         - name: tmp
           emptyDir:
             medium: Memory
             sizeLimit: 4Mi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: cert-inventory
-  namespace: cert-inventory
-  labels:
-    app.kubernetes.io/name: cert-inventory
-spec:
-  selector:
-    app.kubernetes.io/name: cert-inventory
-  ports:
-    - name: metrics
-      port: 9793
-      targetPort: metrics

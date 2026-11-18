@@ -20,42 +20,52 @@ targets.txt ──► cert_inventory.py ──/metrics──► Prometheus ─�
 
 | Path | What |
 |---|---|
+| `deploy/Chart.yaml` and `deploy/templates/` | Helm chart for the exporter |
+| `deploy/values.yaml` | Image, targets, service, and monitoring defaults |
 | `deploy/cert_inventory.py` | The exporter (Python 3.9+, stdlib only) |
-| `deploy/targets.txt` | **The list of certificates to monitor. Edit this.** |
-| `deploy/rbac-targets.yaml` | Generated from `targets.txt`: read access to exactly those objects |
-| `deploy/app.yaml` | Namespace, ServiceAccount, Deployment, Service |
-| `deploy/monitoring.yaml` | ServiceMonitor and PrometheusRule (expiry and health alerts) |
 | `dashboards/` | Grafana dashboards (Inventory and Detail) as a sidecar ConfigMap |
 | `tests/` | Unit tests against a mock Kubernetes API |
 
 ## Setup
 
-1. **Set the image path.** In `deploy/kustomization.yaml`, set `images[0].newName`
-   to the full registry path of the `python-ubi-min` image. Any approved
-   Python 3.9+ image works.
-2. **List your certificates** in `deploy/targets.txt`, one per line:
-   ```
-   # namespace   kind        name           key
-   my-app        secret      my-app-tls     tls.crt
-   ingress       secret      wildcard-cert  *
-   kube-system   configmap   kube-root-ca.crt  ca.crt
-   ```
-   Use `*` as the key to read every key in the object that contains a certificate.
-3. **Regenerate the RBAC** whenever `targets.txt` changes:
-   ```bash
-   python deploy/cert_inventory.py --print-rbac deploy/targets.txt > deploy/rbac-targets.yaml
-   ```
-4. **Deploy the exporter:**
-   ```bash
-   kubectl apply -k deploy
-   ```
-5. **Deploy the dashboards.** First set `namespace` in
-   `dashboards/kustomization.yaml` to the namespace your Grafana sidecar watches
-   (`cattle-dashboards` on Rancher Monitoring). Then run:
-   ```bash
-   kubectl apply -k dashboards
-   ```
-   Or import `dashboards/*.json` through the Grafana UI. Both need Grafana 10 or later.
+### Install with Helm
+
+The chart is in `deploy/`. By default it monitors the Kubernetes-published
+cluster CA certificate. Install it with:
+
+```bash
+helm upgrade --install cert-inventory deploy \
+  --namespace cert-inventory --create-namespace
+```
+
+Set `image.repository` and `image.tag` to your approved Python image as needed.
+To change the monitored objects, pass a values file containing a `targets`
+list; each entry has `namespace`, `kind` (`secret` or `configmap`), `name`, and
+`key` (use `*` to scan all certificate-bearing keys). The chart generates
+read-only, resource-name-scoped Roles and RoleBindings for those targets, so
+RBAC stays in sync with the list. For example:
+
+```yaml
+targets:
+  - namespace: my-app
+    kind: secret
+    name: my-app-tls
+    key: tls.crt
+```
+
+Enable the Prometheus Operator ServiceMonitor and alert rules with
+`--set monitoring.enabled=true` if its CRDs are installed.
+
+### Install the dashboards
+
+Set `namespace` in `dashboards/kustomization.yaml` to the namespace your Grafana
+sidecar watches (`cattle-dashboards` on Rancher Monitoring). Then run:
+
+```bash
+kubectl apply -k dashboards
+```
+
+Or import `dashboards/*.json` through the Grafana UI. Both need Grafana 10 or later.
 
 ### Check that it works
 
@@ -71,8 +81,8 @@ same information.
 
 | reason | Fix |
 |---|---|
-| `forbidden` | Regenerate `rbac-targets.yaml` (step 3) and re-apply |
-| `not_found` | Wrong namespace or name in `targets.txt` |
+| `forbidden` | Upgrade the Helm release after changing `targets`; verify the generated Role and RoleBinding |
+| `not_found` | Wrong namespace or name in the Helm `targets` values |
 | `key_not_found` | Wrong key; check with `kubectl get secret NAME -o jsonpath='{.data}'` |
 | `no_certificates` / `parse_error` | The key isn't a PEM or DER certificate (for example PKCS#12/JKS, which aren't supported) |
 
@@ -97,7 +107,7 @@ same information.
 | `certinv_target_up` | `reason` (labels identify the targets.txt line) |
 | `certinv_target_certificates`, `certinv_targets_file_ok`, `certinv_last_scan_timestamp_seconds`, `certinv_scan_duration_seconds` | exporter health |
 
-Alerts (`deploy/monitoring.yaml`): expiring within 30 days (warning), within 14
+Alerts (from `deploy/templates/monitoring.yaml`): expiring within 30 days (warning), within 14
 days (critical), expired (critical), target unreadable, targets file invalid,
 and the exporter not scanning.
 
@@ -115,8 +125,8 @@ and the exporter not scanning.
   loud failure, not a silent one.
 - **Supported formats:** PEM, PEM bundles, and single DER certificates.
   PKCS#12 and JKS keystores are not supported.
-- Scans run every 5 minutes (`CERTINV_SCAN_INTERVAL_SECONDS`). Edits to
-  `targets.txt` roll the pod automatically through the ConfigMap name hash.
+- Scans run every 5 minutes (`CERTINV_SCAN_INTERVAL_SECONDS`). Editing the Helm
+  `targets` values rolls the pod automatically through the ConfigMap name hash.
 
 ## Development
 
