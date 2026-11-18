@@ -1,0 +1,18 @@
+{{- if .Values.dashboards.enabled }}
+{{- /* Grafana dashboards for the Grafana sidecar. The JSON is inserted verbatim
+       (not templated), so Grafana's ${...} variables need no escaping. */}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "cert-inventory.fullname" . }}-dashboards
+  namespace: {{ default .Release.Namespace .Values.dashboards.namespace }}
+  labels:
+    {{- include "cert-inventory.labels" . | nindent 4 }}
+    {{ .Values.dashboards.label }}: {{ .Values.dashboards.labelValue | quote }}
+  {{- with .Values.dashboards.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+data:
+{{ (.Files.Glob "dashboards/*.json").AsConfig | indent 2 }}
+{{- end }}

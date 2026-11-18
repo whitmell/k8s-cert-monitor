@@ -50,7 +50,7 @@ def subst(expr, values):
 
 
 def check_dashboard(filename, values):
-    d = json.load(open(os.path.join(HERE, "..", "dashboards", filename), encoding="utf-8"))
+    d = json.load(open(os.path.join(HERE, "..", "deploy", "dashboards", filename), encoding="utf-8"))
     print("\n== %s  %s" % (d["title"], values))
     for v in d["templating"]["list"]:
         if v["type"] != "query":

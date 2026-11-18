@@ -2,13 +2,14 @@
 
   python dashboards/generate.py
 
-writes certificate-inventory.json and certificate-detail.json next to this
-file. Edit this script rather than the JSON so PromQL quoting stays correct.
+writes certificate-inventory.json and certificate-detail.json into the Helm
+chart (deploy/dashboards/), which ships them to Grafana. Edit this script rather than the JSON so PromQL quoting stays correct.
 """
 import json
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+OUT = os.path.join(HERE, "..", "deploy", "dashboards")
 DS = {"type": "prometheus", "uid": "${datasource}"}
 INVENTORY_UID = "certinv-inventory"
 DETAIL_UID = "certinv-detail"
@@ -305,7 +306,7 @@ def detail():
 
 if __name__ == "__main__":
     for name, build in (("certificate-inventory.json", inventory), ("certificate-detail.json", detail)):
-        path = os.path.join(HERE, name)
+        path = os.path.normpath(os.path.join(OUT, name))
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             json.dump(build(), f, indent=2)
             f.write("\n")

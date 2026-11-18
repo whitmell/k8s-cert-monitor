@@ -42,5 +42,5 @@ services:
     volumes:
       - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
       - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ../dashboards:/var/lib/grafana/dashboards:ro
+      - ../deploy/dashboards:/var/lib/grafana/dashboards:ro
     ports: ["3000:3000"]

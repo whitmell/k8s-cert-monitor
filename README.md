@@ -23,7 +23,8 @@ targets.txt ──► cert_inventory.py ──/metrics──► Prometheus ─�
 | `deploy/Chart.yaml` and `deploy/templates/` | Helm chart for the exporter |
 | `deploy/values.yaml` | Image, targets, service, and monitoring defaults |
 | `deploy/cert_inventory.py` | The exporter (Python 3.9+, stdlib only) |
-| `dashboards/` | Grafana dashboards (Inventory and Detail) as a sidecar ConfigMap |
+| `deploy/dashboards/` | Grafana dashboards (Inventory and Detail), generated; installed by the chart |
+| `dashboards/generate.py` | Generates the dashboard JSON. Edit this, not the JSON |
 | `tests/` | Unit tests against a mock Kubernetes API |
 
 ## Setup
@@ -56,16 +57,23 @@ targets:
 Enable the Prometheus Operator ServiceMonitor and alert rules with
 `--set monitoring.enabled=true` if its CRDs are installed.
 
-### Install the dashboards
+### Dashboards
 
-Set `namespace` in `dashboards/kustomization.yaml` to the namespace your Grafana
-sidecar watches (`cattle-dashboards` on Rancher Monitoring). Then run:
+The chart also installs both Grafana dashboards (Grafana 10 or later) as a
+ConfigMap for the Grafana dashboard sidecar. The defaults suit Rancher
+Monitoring:
 
-```bash
-kubectl apply -k dashboards
-```
+| Value | Default | Meaning |
+|---|---|---|
+| `dashboards.enabled` | `true` | Set `false` to skip them |
+| `dashboards.namespace` | `cattle-dashboards` | Namespace the sidecar watches (empty: the release namespace) |
+| `dashboards.label` / `labelValue` | `grafana_dashboard` / `"1"` | Must match the sidecar's label setting |
+| `dashboards.annotations` | `{}` | For example `grafana_folder: Certificates` if the sidecar uses a folder annotation |
 
-Or import `dashboards/*.json` through the Grafana UI. Both need Grafana 10 or later.
+The ConfigMap lives outside the release namespace, so whoever runs `helm` needs
+permission to create ConfigMaps in `dashboards.namespace`. Without the sidecar,
+set `dashboards.enabled=false` and import `deploy/dashboards/*.json` through the
+Grafana UI.
 
 ### Check that it works
 

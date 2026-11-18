@@ -38,3 +38,18 @@ monitoring:
   labels: {}
   interval: 60s
   scrapeTimeout: 30s
+
+# Grafana dashboards (Certificate Inventory and Certificate Detail), shipped as a
+# ConfigMap that the Grafana dashboard sidecar loads. Needs Grafana 10 or later.
+dashboards:
+  enabled: true
+  # Namespace the Grafana sidecar watches. Empty means the release namespace.
+  # Rancher Monitoring: cattle-dashboards. Whoever runs helm needs permission
+  # to create ConfigMaps there.
+  namespace: cattle-dashboards
+  # Must match the sidecar's label setting (Rancher Monitoring: grafana_dashboard "1").
+  label: grafana_dashboard
+  labelValue: "1"
+  # Extra annotations, for example a folder when the sidecar sets folderAnnotation:
+  #   grafana_folder: Certificates
+  annotations: {}
