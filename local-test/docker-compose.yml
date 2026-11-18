@@ -1,0 +1,46 @@
+# Local end-to-end test: mock Kubernetes API -> cert-inventory -> Prometheus -> Grafana
+#   bash make-certs.sh && python extract-rules.py && docker compose up -d
+#   Grafana: http://localhost:3000 (anonymous admin)   Prometheus: http://localhost:9090
+services:
+  mock-k8s:
+    image: registry.access.redhat.com/ubi9/python-312:latest
+    command: ["python3", "-I", "/app/mock_k8s.py"]
+    volumes:
+      - ./mock_k8s.py:/app/mock_k8s.py:ro
+      - ./certs:/certs:ro
+  exporter:
+    # Stand-in for base-images-docker/python-ubi-min; same hardening as deploy/app.yaml.
+    image: registry.access.redhat.com/ubi9/python-312:latest
+    command: ["python3", "-I", "/app/cert_inventory.py"]
+    user: "65532:65532"
+    read_only: true
+    tmpfs: ["/tmp"]
+    cap_drop: ["ALL"]
+    environment:
+      CERTINV_API_URL: http://mock-k8s:8080
+      CERTINV_TOKEN_FILE: /var/run/token
+      CERTINV_TARGETS: /config/targets.txt
+      CERTINV_SCAN_INTERVAL_SECONDS: "30"
+    volumes:
+      - ../deploy/cert_inventory.py:/app/cert_inventory.py:ro
+      - ./targets.txt:/config/targets.txt:ro
+      - ./token:/var/run/token:ro
+    ports: ["9793:9793"]
+    depends_on: [mock-k8s]
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./rules.yml:/etc/prometheus/rules.yml:ro
+    ports: ["9090:9090"]
+  grafana:
+    image: grafana/grafana:12.0.2
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    volumes:
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3000:3000"]

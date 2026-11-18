@@ -1,0 +1,794 @@
+{
+  "uid": "certinv-detail",
+  "title": "Certificate Detail",
+  "description": "Decoded details of one certificate monitored by cert-inventory.",
+  "tags": [
+    "certificates",
+    "x509",
+    "tls",
+    "cert-inventory"
+  ],
+  "editable": true,
+  "graphTooltip": 0,
+  "refresh": "5m",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "links": [
+    {
+      "type": "link",
+      "title": "Certificate inventory",
+      "icon": "arrow-left",
+      "url": "/d/certinv-inventory/certificate-inventory",
+      "includeVars": false,
+      "keepTime": false,
+      "targetBlank": false,
+      "tooltip": "",
+      "asDropdown": false,
+      "tags": []
+    }
+  ],
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "label": "Data source",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0,
+        "refresh": 1,
+        "regex": ""
+      },
+      {
+        "name": "namespace",
+        "label": "Namespace",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "query": {
+          "query": "label_values(certinv_cert_info, cert_namespace)",
+          "refId": "namespace",
+          "qryType": 1
+        },
+        "definition": "label_values(certinv_cert_info, cert_namespace)",
+        "current": {},
+        "refresh": 2,
+        "sort": 1,
+        "hide": 0,
+        "multi": false,
+        "includeAll": false,
+        "regex": ""
+      },
+      {
+        "name": "resource",
+        "label": "Resource",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "query": {
+          "query": "label_values(certinv_cert_info{cert_namespace=\"$namespace\"}, cert_resource)",
+          "refId": "resource",
+          "qryType": 1
+        },
+        "definition": "label_values(certinv_cert_info{cert_namespace=\"$namespace\"}, cert_resource)",
+        "current": {},
+        "refresh": 2,
+        "sort": 1,
+        "hide": 0,
+        "multi": false,
+        "includeAll": false,
+        "regex": ""
+      },
+      {
+        "name": "key",
+        "label": "Key",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "query": {
+          "query": "label_values(certinv_cert_info{cert_namespace=\"$namespace\",cert_resource=\"$resource\"}, cert_key)",
+          "refId": "key",
+          "qryType": 1
+        },
+        "definition": "label_values(certinv_cert_info{cert_namespace=\"$namespace\",cert_resource=\"$resource\"}, cert_key)",
+        "current": {},
+        "refresh": 2,
+        "sort": 1,
+        "hide": 0,
+        "multi": false,
+        "includeAll": false,
+        "regex": ""
+      },
+      {
+        "name": "serial",
+        "label": "Serial",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "query": {
+          "query": "label_values(certinv_cert_info{cert_namespace=\"$namespace\",cert_resource=\"$resource\",cert_key=\"$key\"}, serial_number)",
+          "refId": "serial",
+          "qryType": 1
+        },
+        "definition": "label_values(certinv_cert_info{cert_namespace=\"$namespace\",cert_resource=\"$resource\",cert_key=\"$key\"}, serial_number)",
+        "current": {},
+        "refresh": 2,
+        "sort": 1,
+        "hide": 0,
+        "multi": false,
+        "includeAll": false,
+        "regex": ""
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Days left",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(certinv_cert_not_after_seconds{cert_namespace=\"$namespace\",cert_resource=\"$resource\",cert_key=\"$key\",serial_number=\"$serial\"} - time()) / 86400",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "dark-red",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 14
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 90
+              }
+            ]
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Valid until",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "certinv_cert_not_after_seconds{cert_namespace=\"$namespace\",cert_resource=\"$resource\",cert_key=\"$key\",serial_number=\"$serial\"} * 1000",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeAsIso",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Valid from",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "certinv_cert_not_before_seconds{cert_namespace=\"$namespace\",cert_resource=\"$resource\",cert_key=\"$key\",serial_number=\"$serial\"} * 1000",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeAsIso",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Validity period (days)",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(max(certinv_cert_not_after_seconds{cert_namespace=\"$namespace\",cert_resource=\"$resource\",cert_key=\"$key\",serial_number=\"$serial\"}) - max(certinv_cert_not_before_seconds{cert_namespace=\"$namespace\",cert_resource=\"$resource\",cert_key=\"$key\",serial_number=\"$serial\"})) / 86400",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "-"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Certificate",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 15,
+        "x": 0,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "certinv_cert_info{cert_namespace=\"$namespace\",cert_resource=\"$resource\",cert_key=\"$key\",serial_number=\"$serial\"}",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "rows",
+            "keepLabels": [
+              "subject",
+              "issuer",
+              "sans",
+              "serial_number",
+              "sha256_fingerprint",
+              "not_before",
+              "not_after",
+              "cert_namespace",
+              "cert_resource",
+              "cert_key"
+            ]
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "label": "Field",
+              "value": "Value"
+            }
+          }
+        }
+      ],
+      "options": {
+        "showHeader": false,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true,
+            "inspect": false,
+            "cellOptions": {
+              "type": "auto",
+              "wrapText": false
+            }
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Field"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 210
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "subject": {
+                        "text": "Subject",
+                        "index": 0
+                      },
+                      "issuer": {
+                        "text": "Issuer",
+                        "index": 1
+                      },
+                      "sans": {
+                        "text": "Subject alternative names",
+                        "index": 2
+                      },
+                      "serial_number": {
+                        "text": "Serial number (hex)",
+                        "index": 3
+                      },
+                      "sha256_fingerprint": {
+                        "text": "SHA-256 fingerprint",
+                        "index": 4
+                      },
+                      "not_before": {
+                        "text": "Valid from (UTC)",
+                        "index": 5
+                      },
+                      "not_after": {
+                        "text": "Valid until (UTC)",
+                        "index": 6
+                      },
+                      "cert_namespace": {
+                        "text": "Namespace",
+                        "index": 7
+                      },
+                      "cert_resource": {
+                        "text": "Stored in",
+                        "index": 8
+                      },
+                      "cert_key": {
+                        "text": "Key",
+                        "index": 9
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Subject alternative names",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 9,
+        "x": 15,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "certinv_cert_san_info{cert_namespace=\"$namespace\",cert_resource=\"$resource\",cert_key=\"$key\",serial_number=\"$serial\"}",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "san"
+              ]
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {
+              "san": 0
+            },
+            "renameByName": {
+              "san": "Name"
+            }
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        },
+        "sortBy": [
+          {
+            "displayName": "Name",
+            "desc": false
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true,
+            "inspect": false,
+            "cellOptions": {
+              "type": "auto",
+              "wrapText": false
+            }
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "No SANs"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "All certificates in this key",
+      "description": "A key holding a bundle (leaf + intermediates/CA) lists each certificate. Click a serial to view that certificate.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "certinv_cert_info{cert_namespace=\"$namespace\",cert_resource=\"$resource\",cert_key=\"$key\"}",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "subject",
+                "issuer",
+                "serial_number",
+                "not_after"
+              ]
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {
+              "subject": 0,
+              "issuer": 1,
+              "serial_number": 2,
+              "not_after": 3
+            },
+            "renameByName": {
+              "subject": "Subject",
+              "issuer": "Issuer",
+              "serial_number": "Serial",
+              "not_after": "Valid until (UTC)"
+            }
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true,
+            "inspect": false,
+            "cellOptions": {
+              "type": "auto",
+              "wrapText": false
+            }
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Serial"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "View this certificate",
+                    "url": "/d/certinv-detail/certificate-detail?${datasource:queryparam}&${namespace:queryparam}&${resource:queryparam}&${key:queryparam}&var-serial=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

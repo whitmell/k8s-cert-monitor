@@ -1,0 +1,12 @@
+# Local test targets (served by mock_k8s.py)
+payments     secret     payments-tls      *
+edge         secret     gateway-tls       tls.crt
+web          secret     portal-tls        tls.crt
+web          secret     legacy-tls        tls.crt
+reports      secret     reporting-tls     tls.crt
+reports      secret     truststore        root.der
+kube-system  configmap  kube-root-ca.crt  ca.crt
+# deliberately failing entries
+web          secret     does-not-exist    tls.crt
+reports      secret     reporting-tls     wrong.key
+locked       secret     secret-stuff      tls.crt
